@@ -110,3 +110,21 @@ func HandlerReset(state *State, command Command) error {
 
 	return nil
 }
+
+func HandlerUsers(state *State, command Command) error {
+	users, err := state.Db.GetAllUsers(context.Background())
+
+	if err != nil {
+		return fmt.Errorf("Error checking users: %w", err)
+	}
+
+	for _, user := range users {
+		if user.Name == state.Config.CurrentUserName {
+			fmt.Printf("# %v (current) \n", user.Name)
+		} else {
+			fmt.Printf("# %v \n", user.Name)
+		}
+	}
+
+	return nil
+}
