@@ -72,18 +72,32 @@ func (q *Queries) FindFeedUser(ctx context.Context, id uuid.UUID) (User, error) 
 }
 
 const getAllFeeds = `-- name: GetAllFeeds :many
-SELECT id, created_at, updated_at, name, url, user_id FROM feeds
+SELECT feeds.id, feeds.created_at, feeds.updated_at, feeds.name, url, user_id, users.id, users.created_at, users.updated_at, users.name, users.name as user_name FROM feeds JOIN users ON feeds.user_id = users.id
 `
 
-func (q *Queries) GetAllFeeds(ctx context.Context) ([]Feed, error) {
+type GetAllFeedsRow struct {
+	ID          uuid.UUID
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+	Name        string
+	Url         string
+	UserID      uuid.UUID
+	ID_2        uuid.UUID
+	CreatedAt_2 time.Time
+	UpdatedAt_2 time.Time
+	Name_2      string
+	UserName    string
+}
+
+func (q *Queries) GetAllFeeds(ctx context.Context) ([]GetAllFeedsRow, error) {
 	rows, err := q.db.QueryContext(ctx, getAllFeeds)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Feed
+	var items []GetAllFeedsRow
 	for rows.Next() {
-		var i Feed
+		var i GetAllFeedsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.CreatedAt,
@@ -91,6 +105,11 @@ func (q *Queries) GetAllFeeds(ctx context.Context) ([]Feed, error) {
 			&i.Name,
 			&i.Url,
 			&i.UserID,
+			&i.ID_2,
+			&i.CreatedAt_2,
+			&i.UpdatedAt_2,
+			&i.Name_2,
+			&i.UserName,
 		); err != nil {
 			return nil, err
 		}
