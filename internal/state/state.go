@@ -7,6 +7,7 @@ import (
 	"os"
 	"rss/internal/config"
 	"rss/internal/database"
+	"rss/internal/rssfeed"
 	"time"
 
 	"github.com/google/uuid"
@@ -126,5 +127,16 @@ func HandlerUsers(state *State, command Command) error {
 		}
 	}
 
+	return nil
+}
+
+func HandlerAgg(state *State, command Command) error {
+	feed, err := rssfeed.FetchFeed(context.Background(), "https://www.wagslane.dev/index.xml")
+
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(feed)
 	return nil
 }
