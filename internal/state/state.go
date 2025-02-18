@@ -167,3 +167,21 @@ func HandlerAddFeed(state *State, command Command) error {
 
 	return nil
 }
+
+func HandlerListFeeds(state *State, command Command) error {
+
+	feedRecords, err := state.Db.GetAllFeeds(context.Background())
+	if err != nil {
+		return fmt.Errorf("error fetching feeds: %w", err)
+	}
+
+	for i, item := range feedRecords {
+		user, err := state.Db.FindFeedUser(context.Background(), item.UserID)
+		if err != nil {
+			return fmt.Errorf("error fetching feed's author: %w", err)
+		}
+		fmt.Printf("Name: %v, URL: %v, Username: %v \n", feedRecords[i].Name, feedRecords[i].Url, user.Name)
+	}
+
+	return nil
+}
