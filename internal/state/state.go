@@ -140,3 +140,30 @@ func HandlerAgg(state *State, command Command) error {
 	fmt.Println(feed)
 	return nil
 }
+
+func HandlerAddFeed(state *State, command Command) error {
+	if len(command.Args) < 2 {
+		return errors.New("no argument provided")
+	}
+
+	user, err := state.Db.GetUser(context.Background(), state.Config.CurrentUserName)
+	if err != nil {
+		return fmt.Errorf("logged in as invalid user: %w", err)
+	}
+
+	feed, err := state.Db.AddFeed(context.Background(), database.AddFeedParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Name:      command.Args[0],
+		Url:       command.Args[1],
+		UserID:    user.ID,
+	})
+	if err != nil {
+		return fmt.Errorf("error creating feed: %w", err)
+	}
+
+	fmt.Printf("Created new feed: %v by user %v", feed.Name, user.Name)
+
+	return nil
+}
