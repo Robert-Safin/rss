@@ -4,9 +4,11 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"rss/internal/commands"
 	"rss/internal/config"
 	"rss/internal/database"
 	"rss/internal/state"
+	"rss/middleware"
 
 	_ "github.com/lib/pq"
 )
@@ -25,19 +27,19 @@ func main() {
 		os.Exit(1)
 	}
 	appState := state.State{Config: &config, Db: dbQueries}
-	commands := state.Commands{
-		Commands: make(map[string]func(*state.State, state.Command) error),
+	cmds := commands.Commands{
+		Commands: make(map[string]func(*state.State, commands.Command) error),
 	}
 
-	commands.Register("login", state.HandlerLogin)
-	commands.Register("register", state.HandlerRegister)
-	commands.Register("reset", state.HandlerReset)
-	commands.Register("users", state.HandlerUsers)
-	commands.Register("agg", state.HandlerAgg)
-	commands.Register("addfeed", state.HandlerAddFeed)
-	commands.Register("feeds", state.HandlerListFeeds)
-	commands.Register("follow", state.HandlerFollow)
-	commands.Register("following", state.HandlerFollowing)
+	cmds.Register("login", commands.HandlerLogin)
+	cmds.Register("register", commands.HandlerRegister)
+	cmds.Register("reset", commands.HandlerReset)
+	cmds.Register("users", commands.HandlerUsers)
+	cmds.Register("agg", commands.HandlerAgg)
+	cmds.Register("addfeed", middleware.MiddlewareLoggedIn(commands.HandlerAddFeed))
+	cmds.Register("feeds", commands.HandlerListFeeds)
+	cmds.Register("follow", middleware.MiddlewareLoggedIn(commands.HandlerFollow))
+	cmds.Register("following", middleware.MiddlewareLoggedIn(commands.HandlerFollowing))
 
 	args := os.Args[1:]
 	if len(args) < 1 {
@@ -47,12 +49,12 @@ func main() {
 	commandName := args[0]
 	args = args[1:]
 
-	newCommand := state.Command{
+	newCommand := commands.Command{
 		Name: commandName,
 		Args: args,
 	}
 
-	err = commands.Run(&appState, newCommand)
+	err = cmds.Run(&appState, newCommand)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
