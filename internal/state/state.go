@@ -148,7 +148,7 @@ func HandlerAddFeed(state *State, command Command) error {
 
 	user, err := state.Db.GetUser(context.Background(), state.Config.CurrentUserName)
 	if err != nil {
-		return fmt.Errorf("logged in as invalid user: %w", err)
+		return fmt.Errorf("user error: %w", err)
 	}
 
 	feed, err := state.Db.AddFeed(context.Background(), database.AddFeedParams{
@@ -161,6 +161,15 @@ func HandlerAddFeed(state *State, command Command) error {
 	})
 	if err != nil {
 		return fmt.Errorf("error creating feed: %w", err)
+	}
+
+	_, err = state.Db.CreateFeedFollow(context.Background(), database.CreateFeedFollowParams{
+		UserID: user.ID,
+		FeedID: feed.ID,
+	})
+
+	if err != nil {
+		return err
 	}
 
 	fmt.Printf("Created new feed: %v by user %v", feed.Name, user.Name)
@@ -179,5 +188,51 @@ func HandlerListFeeds(state *State, command Command) error {
 		fmt.Printf("Name: %v, URL: %v, Username: %v \n", item.Name, item.Url, item.UserName)
 	}
 
+	return nil
+}
+
+func HandlerFollow(state *State, command Command) error {
+
+	if len(command.Args) < 1 {
+		return errors.New("url not provided")
+	}
+
+	user, err := state.Db.GetUser(context.Background(), state.Config.CurrentUserName)
+	if err != nil {
+		return fmt.Errorf("user error : %w", err)
+	}
+	feed, err := state.Db.FindFeedByUrl(context.Background(), command.Args[0])
+	if err != nil {
+		return fmt.Errorf("feed doent not exist : %w", err)
+	}
+
+	_, err = state.Db.CreateFeedFollow(context.Background(), database.CreateFeedFollowParams{
+		UserID: user.ID,
+		FeedID: feed.ID,
+	})
+
+	if err != nil {
+		return fmt.Errorf("error creating feed_follow : %w", err)
+	}
+
+	fmt.Printf("%v follows %v", user.Name, feed.Name)
+
+	return nil
+}
+
+func HandlerFollowing(state *State, command Command) error {
+	user, err := state.Db.GetUser(context.Background(), state.Config.CurrentUserName)
+	if err != nil {
+		return fmt.Errorf("User erre : %w", err)
+	}
+
+	names, err := state.Db.GetFeedFollowsForUser(context.Background(), user.ID)
+	if err != nil {
+		return fmt.Errorf("Failed to get following list: %w", err)
+	}
+	fmt.Printf("%v is following:\n", user.Name)
+	for _, feed := range names {
+		fmt.Printf("# %v \n", feed.FeedName)
+	}
 	return nil
 }
